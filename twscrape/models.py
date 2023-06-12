@@ -71,6 +71,50 @@ class TextLink(JSONTrait):
         )
 
 
+@dataclass()
+class VideoVariant(JSONTrait):
+    bitrate: int | None
+    contentType: str
+    url: str
+
+    @staticmethod
+    def parse(obj: dict):
+        print(obj)
+        return VideoVariant(
+            bitrate=int_or_none(obj, "bitrate"),
+            contentType=obj["content_type"],
+            url=obj["url"],
+        )
+
+
+@dataclass
+class VideoInfo(JSONTrait):
+    aspectRatio: tuple[int, int]
+    variants: list[VideoVariant]
+
+    @staticmethod
+    def parse(obj: dict):
+        return VideoInfo(
+            aspectRatio=tuple(obj["aspect_ratio"]),
+            variants=[VideoVariant.parse(v) for v in obj["variants"]],
+        )
+
+
+@dataclass
+class Media(JSONTrait):
+    url: str
+    type: str
+    videoInfo: VideoInfo | None = None
+
+    @staticmethod
+    def parse(obj: dict):
+        return Media(
+            url=obj["media_url_https"],
+            type=obj["type"],
+            videoInfo=VideoInfo.parse(obj["video_info"]) if obj.get("video_info") else None,
+        )
+
+
 @dataclass
 class UserRef(JSONTrait):
     id: int
@@ -148,6 +192,7 @@ class Tweet(JSONTrait):
     hashtags: list[str]
     cashtags: list[str]
     mentionedUsers: list[UserRef]
+    media: list[Media]
     links: list[TextLink]
     viewCount: int | None = None
     retweetedTweet: Optional["Tweet"] = None
@@ -188,6 +233,7 @@ class Tweet(JSONTrait):
             hashtags=[x["text"] for x in get_or(obj, "entities.hashtags", [])],
             cashtags=[x["text"] for x in get_or(obj, "entities.symbols", [])],
             mentionedUsers=[UserRef.parse(x) for x in get_or(obj, "entities.user_mentions", [])],
+            media=[Media.parse(x) for x in get_or(obj, "extended_entities.media", [])],
             links=[TextLink.parse(x) for x in get_or(obj, "entities.urls", [])],
             viewCount=int_or_none(obj, "ext_views.count"),
             retweetedTweet=Tweet.parse(rt_obj, res) if rt_obj else None,
