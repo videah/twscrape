@@ -79,7 +79,6 @@ class VideoVariant(JSONTrait):
 
     @staticmethod
     def parse(obj: dict):
-        print(obj)
         return VideoVariant(
             bitrate=int_or_none(obj, "bitrate"),
             contentType=obj["content_type"],
